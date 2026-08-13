@@ -1,0 +1,21 @@
+{
+  "name": "sagemath-skill",
+  "owner": {
+    "name": "Iwao Kimura"
+  },
+  "metadata": {
+    "description": "A Claude Code skill of recurring SageMath scripting pitfalls",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "sagemath",
+      "description": "SageMath scripting pitfalls: stdout block-buffering when redirected, the PYTHONUNBUFFERED / explicit-flush fix, and the sage -python trap that silently drops the Sage library and preparser",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./sagemath"
+      ]
+    }
+  ]
+}
