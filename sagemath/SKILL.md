@@ -1,6 +1,6 @@
 ---
 name: sagemath
-description: Use before writing, editing, or debugging a SageMath (.sage) script, or before running one with `sage`. Covers Sage-specific footguns -- stdout block-buffering when redirected to a file or pipe (a killed job can silently lose everything printed so far), the fix via PYTHONUNBUFFERED or explicit flush, the `sage -python`/`--python` trap that silently drops the Sage library and preparser, `load()` resolving relative paths against the working directory instead of the calling script, and variable-name collisions inside Sage's own code (a curve built over a ring whose generator is not named `x` can break Sage's internals with a TypeError that looks like the caller's bug).
+description: Use before writing, editing, or debugging a SageMath (.sage) script, or before running one with `sage`. Covers Sage-specific footguns -- stdout block-buffering when redirected to a file or pipe (a killed job can silently lose everything printed so far), the fix via PYTHONUNBUFFERED or explicit flush, the `sage -python`/`--python` trap that silently drops the Sage library and preparser, `load()` resolving relative paths against the working directory instead of the calling script, running doctests via `sage -python -m sage.doctest` when `sage -t` is missing, and variable-name collisions inside Sage's own code (a curve built over a ring whose generator is not named `x` can break Sage's internals with a TypeError that looks like the caller's bug).
 ---
 
 # SageMath scripting: recurring pitfalls
@@ -60,6 +60,15 @@ long-running job looks stuck with no output.
   `__file__` is defined when running `sage main.sage`; it points to the
   preparsed `main.sage.py`, which Sage writes *next to the script* (so add
   `*.sage.py` to `.gitignore` in a repository of `.sage` files).
+- **`sage -t` can be missing from an install; run the doctester as
+  `sage -python -m sage.doctest` instead.** Verified on a Sage 10.8
+  install (`/var/tmp/sage-10.8-current`): `sage -t file.sage` fails with
+  `exec: sage-runtests: not found`, while
+  `sage -python -m sage.doctest file.sage` runs the standard doctester on
+  the same file (34 tests, "All tests passed!"). This is the one
+  legitimate use of `sage -python`: the doctest framework imports Sage and
+  preparses the `sage:` examples itself, so the trap above does not apply.
+  Don't hand-roll a doctest runner before trying this.
 
 ## Variable names are not local: Sage's internals assume `x`
 
