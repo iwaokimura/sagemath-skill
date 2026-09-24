@@ -155,3 +155,11 @@ long-running job looks stuck with no output.
   the constant field is `GF(2)`. `M, _, _ = L.simple_model()` gives the
   same field as a simple extension of `K`, and `M.genus()`,
   `M.places_infinite(d)` work.
+- **`DrinfeldModule.is_isomorphic` fails over `F_q(T)` even for an
+  obvious isomorphism.** Verified on Sage 10.8 with `A = GF(3)['t']`,
+  `phi_t = t + (t+1)tau + tau^2` and `psi = u^{-1} phi u` for `u = t`
+  (same `j`): `phi.is_isomorphic(psi)` raises
+  `NotImplementedError: cannot solve the equation u^2 == 1/t^2`, although
+  `u = 1/t` lies in the base field. Compare `j_invariant()` (over an
+  algebraically closed field this decides isomorphism in rank 2) or
+  compute `u^-1 * phi(t) * u` directly instead.
