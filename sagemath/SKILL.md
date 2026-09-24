@@ -1,6 +1,6 @@
 ---
 name: sagemath
-description: Use before writing, editing, or debugging a SageMath (.sage) script, or before running one with `sage`. Covers Sage-specific footguns -- stdout block-buffering when redirected to a file or pipe (a killed job can silently lose everything printed so far), the fix via PYTHONUNBUFFERED or explicit flush, the `sage -python`/`--python` trap that silently drops the Sage library and preparser, `load()` resolving relative paths against the working directory instead of the calling script, running doctests via `sage -python -m sage.doctest` when `sage -t` is missing, variable-name collisions inside Sage's own code (a curve built over a ring whose generator is not named `x` can break Sage's internals with a TypeError that looks like the caller's bug), and `Subsets` returning elements from an earlier call in a different parent (e.g. `t` over GF(4) instead of GF(2)).
+description: Use before writing, editing, or debugging a SageMath (.sage) script, or before running one with `sage`. Covers Sage-specific footguns -- stdout block-buffering when redirected to a file or pipe (a killed job can silently lose everything printed so far), the fix via PYTHONUNBUFFERED or explicit flush, the `sage -python`/`--python` trap that silently drops the Sage library and preparser, `load()` resolving relative paths against the working directory instead of the calling script, running doctests via `sage -python -m sage.doctest` when `sage -t` is missing, variable-name collisions inside Sage's own code (a curve built over a ring whose generator is not named `x` can break Sage's internals with a TypeError that looks like the caller's bug), `Subsets` returning elements from an earlier call in a different parent (e.g. `t` over GF(4) instead of GF(2)), and function-field traps (a reducible defining polynomial silently giving genus -1, `places_infinite()` defaulting to degree 1, `genus()` unavailable on towers, `DrinfeldModule.is_isomorphic` failing over F_q(T)).
 ---
 
 # SageMath scripting: recurring pitfalls
@@ -129,3 +129,13 @@ long-running job looks stuck with no output.
   before", suspect a cached constructor keyed on equal-comparing
   elements (`t` over `GF(2)` and over `GF(4)` compare equal) before
   suspecting your own code.
+
+## Function fields: silent wrong answers and missing methods
+
+- **`K.extension(f)` accepts a reducible `f` without complaint, and
+  `genus()` then returns `-1`.** Verified on Sage 10.8 over
+  `K = FunctionField(GF(3))`: `y^2 - x^2`, `(y - x)*(y - x - 1)` and
+  `y^2 - 1` all give an "extension" whose `genus()` is `-1`, with no
+  error or warning. A negative genus is the only symptom. **Always check
+  `f.is_irreducible()` (over `K`) before trusting any invariant of
+  `K.extension(f)`.**
