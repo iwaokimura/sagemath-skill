@@ -139,3 +139,11 @@ long-running job looks stuck with no output.
   error or warning. A negative genus is the only symptom. **Always check
   `f.is_irreducible()` (over `K`) before trusting any invariant of
   `K.extension(f)`.**
+- **`places_infinite()` returns only the places of degree 1 by default.**
+  Verified on Sage 10.8: for `F = K.extension(y^2 - (2*x^4 + x + 1))`
+  over `GF(3)` (the infinite place is inert, so the place above it has
+  degree 2), `F.places_infinite()` is `[]`, while `F.places_infinite(2)`
+  returns the place. Code that indexes `places_infinite()[0]` then fails
+  with `IndexError`, or, worse, a count of `len(places_infinite())` is
+  silently wrong. Pass the degree explicitly (`places_infinite(d)` for
+  each `d` that can occur) when the infinite place may be inert.
