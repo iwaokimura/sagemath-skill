@@ -147,3 +147,11 @@ long-running job looks stuck with no output.
   with `IndexError`, or, worse, a count of `len(places_infinite())` is
   silently wrong. Pass the degree explicitly (`places_infinite(d)` for
   each `d` that can occur) when the infinite place may be inert.
+- **`genus()` is not implemented on a tower of function fields; use
+  `simple_model()`.** Verified on Sage 10.8: for `F = K.extension(...)`
+  over `K = FunctionField(GF(2))` and `L = F.extension(...)`,
+  `L.genus()` raises `NotImplementedError: computation of genus over
+  non-prime constant fields not implemented yet` -- misleadingly, since
+  the constant field is `GF(2)`. `M, _, _ = L.simple_model()` gives the
+  same field as a simple extension of `K`, and `M.genus()`,
+  `M.places_infinite(d)` work.
