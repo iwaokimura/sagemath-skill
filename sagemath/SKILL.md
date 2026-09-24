@@ -1,6 +1,6 @@
 ---
 name: sagemath
-description: Use before writing, editing, or debugging a SageMath (.sage) script, or before running one with `sage`. Covers Sage-specific footguns -- stdout block-buffering when redirected to a file or pipe (a killed job can silently lose everything printed so far), the fix via PYTHONUNBUFFERED or explicit flush, the `sage -python`/`--python` trap that silently drops the Sage library and preparser, `load()` resolving relative paths against the working directory instead of the calling script, running doctests via `sage -python -m sage.doctest` when `sage -t` is missing, and variable-name collisions inside Sage's own code (a curve built over a ring whose generator is not named `x` can break Sage's internals with a TypeError that looks like the caller's bug).
+description: Use before writing, editing, or debugging a SageMath (.sage) script, or before running one with `sage`. Covers Sage-specific footguns -- stdout block-buffering when redirected to a file or pipe (a killed job can silently lose everything printed so far), the fix via PYTHONUNBUFFERED or explicit flush, the `sage -python`/`--python` trap that silently drops the Sage library and preparser, `load()` resolving relative paths against the working directory instead of the calling script, running doctests via `sage -python -m sage.doctest` when `sage -t` is missing, variable-name collisions inside Sage's own code (a curve built over a ring whose generator is not named `x` can break Sage's internals with a TypeError that looks like the caller's bug), and `Subsets` returning elements from an earlier call in a different parent (e.g. `t` over GF(4) instead of GF(2)).
 ---
 
 # SageMath scripting: recurring pitfalls
@@ -100,3 +100,32 @@ long-running job looks stuck with no output.
 - The general shape: when a Sage routine fails on parents that "should"
   match, compare the *variable names* printed in the two parents before
   looking anywhere else.
+
+## Cached constructors can hand back elements from an earlier call
+
+- **`Subsets(L)` can return elements built in a *previous* call, living in
+  a different parent, when the old and new elements compare equal.**
+  Verified on Sage 10.8:
+
+  ```python
+  t4 = GF(4, "a")["t"].gen()
+  t2 = GF(2)["t"].gen()        # t4 == t2 and hash(t4) == hash(t2)
+  _ = Subsets([t4])
+  list(list(Subsets([t2]))[-1])[0].parent()
+  # Univariate Polynomial Ring in t over Finite Field in a of size 2^2
+  ```
+
+  The two `Subsets` objects are not identical, and `Set([t2])` on its own
+  is unaffected, so the caching layer is somewhere inside `Subsets`; what
+  matters is the observed behaviour. In a loop over `q = 4, 2` this
+  surfaced far from the call, as
+  `TypeError: unsupported operand parent(s) for *: 'Finite Field in a of
+  size 2^2' and '... over Finite Field of size 2'` inside unrelated
+  arithmetic — once again reading as a bug in the caller.
+- **Fix: iterate subsets with `itertools.combinations`** (or any plain
+  Python construction) when the elements may come from different parents
+  across calls; verified to keep the parent of `t2`.
+- The general shape: when an element's parent is inexplicably "one from
+  before", suspect a cached constructor keyed on equal-comparing
+  elements (`t` over `GF(2)` and over `GF(4)` compare equal) before
+  suspecting your own code.
