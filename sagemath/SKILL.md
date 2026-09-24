@@ -1,6 +1,6 @@
 ---
 name: sagemath
-description: Use before writing, editing, or debugging a SageMath (.sage) script, or before running one with `sage`. Covers Sage-specific footguns -- stdout block-buffering when redirected to a file or pipe (a killed job can silently lose everything printed so far), the fix via PYTHONUNBUFFERED or explicit flush, the `sage -python`/`--python` trap that silently drops the Sage library and preparser, and variable-name collisions inside Sage's own code (a curve built over a ring whose generator is not named `x` can break Sage's internals with a TypeError that looks like the caller's bug).
+description: Use before writing, editing, or debugging a SageMath (.sage) script, or before running one with `sage`. Covers Sage-specific footguns -- stdout block-buffering when redirected to a file or pipe (a killed job can silently lose everything printed so far), the fix via PYTHONUNBUFFERED or explicit flush, the `sage -python`/`--python` trap that silently drops the Sage library and preparser, `load()` resolving relative paths against the working directory instead of the calling script, and variable-name collisions inside Sage's own code (a curve built over a ring whose generator is not named `x` can break Sage's internals with a TypeError that looks like the caller's bug).
 ---
 
 # SageMath scripting: recurring pitfalls
@@ -45,6 +45,21 @@ long-running job looks stuck with no output.
   runs it fine. If you need the full Sage environment, always invoke as
   `sage script.sage` (optionally with `PYTHONUNBUFFERED=1` prefixed, as
   above) — never `sage -python`/`--python` for an actual `.sage` file.
+- **`load("helper.sage")` resolves against the current working
+  directory, not against the script that calls it.** Verified on Sage
+  10.8: a script containing `load("lib.sage")` works when run from its own
+  directory and fails with `OSError: did not find file 'lib.sage' to load
+  or attach` when run as `sage /path/to/main.sage` from elsewhere. Fix —
+  verified: anchor the path at the script itself,
+
+  ```python
+  import os
+  load(os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib.sage"))
+  ```
+
+  `__file__` is defined when running `sage main.sage`; it points to the
+  preparsed `main.sage.py`, which Sage writes *next to the script* (so add
+  `*.sage.py` to `.gitignore` in a repository of `.sage` files).
 
 ## Variable names are not local: Sage's internals assume `x`
 
